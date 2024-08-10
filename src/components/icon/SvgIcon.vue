@@ -1,7 +1,7 @@
 <template>
   <div v-if="props.name">
     <GenIcon2
-      v-if="Array.isArray(props.color)"
+      v-if="Array.isArray(props.color) || Array.isArray(props.hoverColor)"
       :name="props.name"
       :src="`${BASE_PATH}${props.name}.svg`"
       :width="props.width"
@@ -24,10 +24,13 @@
 </template>
 
 <script setup lang="ts">
+import { PropType } from "vue";
 import GenIcon from "./GenIcon.vue";
 import GenIcon2 from "./GenIcon2.vue";
 
-const BASE_PATH = "/public/svg/";
+const BASE_PATH = "/svg/";
+
+type ColorType = string[] | string;
 
 const props = defineProps({
   name: {
@@ -41,10 +44,10 @@ const props = defineProps({
     type: String,
   },
   color: {
-    type: [String, Array], // [stroke, fill]
+    type: Array as PropType<ColorType>,
   },
   hoverColor: {
-    type: [String, Array], // [stroke, fill]
+    type: Array as PropType<ColorType>,
   },
   strokeWidth: {
     type: String,

@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SvgCacheStore } from "@/composables/useSvgCacheStore";
+import type { SvgCacheStore } from "../../composables/useSvgCacheStore";
 import { ref, onMounted, onUnmounted, inject, watch, computed } from "vue";
 
 const props = defineProps<{

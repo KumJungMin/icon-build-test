@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from "vue";
+import { provide } from "vue";
+import { useSvgCacheStore } from "./composables/useSvgCacheStore";
 
-const components = [];
+const svgCacheStore = useSvgCacheStore();
 
-// Dynamically import all .vue files in the ./components directory
+provide("svgCacheStore", svgCacheStore);
+
+const components = [] as {
+  name: string;
+  component: ReturnType<typeof defineAsyncComponent>;
+}[];
+
 const modules = import.meta.glob("./components/TestPage*.vue");
 
 for (const path in modules) {
@@ -12,7 +20,7 @@ for (const path in modules) {
     const name = `TestPage${nameMatch[1]}`;
     components.push({
       name,
-      component: defineAsyncComponent(modules[path]),
+      component: defineAsyncComponent(modules[path] as any),
     });
   }
 }
