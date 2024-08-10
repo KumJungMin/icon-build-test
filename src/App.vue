@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from "vue";
 
-const components = [];
+const components: { name: string; component: any }[] = [];
 
 // Dynamically import all .vue files in the ./components directory
 const modules = import.meta.glob("./components/TestPage*.vue");
@@ -12,7 +12,7 @@ for (const path in modules) {
     const name = `TestPage${nameMatch[1]}`;
     components.push({
       name,
-      component: defineAsyncComponent(modules[path]),
+      component: defineAsyncComponent(modules[path] as any),
     });
   }
 }
