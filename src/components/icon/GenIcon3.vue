@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import type { SvgCacheStore } from "../../composables/useSvgCacheStore";
-import { ref, onMounted, onUnmounted, inject, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, inject, watch } from "vue";
 
 // 컴포넌트의 props 정의
 const props = defineProps<{
@@ -31,25 +31,21 @@ const svgContainer = ref<HTMLElement | null>(null);
 let svgElement: SVGElement | null = null;
 let observer: IntersectionObserver | null = null;
 
-const strokeColor = computed(() =>
-  Array.isArray(props.color) ? props.color[0] : props.color || "currentColor"
-);
+// 색상에 따른 클래스명을 저장할 Map과 카운터
+const colorClassMap = new Map<string, string>();
+let colorClassCounter = 1;
 
-const fillColor = computed(() =>
-  Array.isArray(props.color) ? props.color[1] : props.color || "currentColor"
-);
+const getColor = (index: number, defaultColor: string) => {
+  return Array.isArray(props.color)
+    ? props.color[index] || defaultColor
+    : props.color || defaultColor;
+};
 
-const hoverStrokeColor = computed(() =>
-  Array.isArray(props.hoverColor)
-    ? props.hoverColor[0]
-    : props.hoverColor || strokeColor.value
-);
-
-const hoverFillColor = computed(() =>
-  Array.isArray(props.hoverColor)
-    ? props.hoverColor[1]
-    : props.hoverColor || fillColor.value
-);
+const getHoverColor = (index: number, defaultColor: string) => {
+  return Array.isArray(props.hoverColor)
+    ? props.hoverColor[index] || getColor(index, defaultColor)
+    : props.hoverColor || getColor(index, defaultColor);
+};
 
 const loadAndInsertSvg = async () => {
   const svgContent = await svgCacheStore.loadSvg(props.src);
@@ -82,21 +78,7 @@ const updateSvgAttributes = () => {
     svgElement.classList.add(iconClassName);
 
     const paths = svgElement.querySelectorAll("[stroke], [fill]");
-
-    paths.forEach((path) => {
-      if (
-        path.hasAttribute("stroke") &&
-        path.getAttribute("stroke") !== "none"
-      ) {
-        path.classList.add("svg-stroke");
-        if (props.strokeWidth) {
-          path.setAttribute("stroke-width", props.strokeWidth);
-        }
-      }
-      if (path.hasAttribute("fill") && path.getAttribute("fill") !== "none") {
-        path.classList.add("svg-fill");
-      }
-    });
+    addSvgPathClass(paths); // 색상에 따른 클래스명 지정
 
     let styleElement = svgElement.querySelector("style");
     if (!styleElement) {
@@ -104,12 +86,64 @@ const updateSvgAttributes = () => {
       svgElement.insertBefore(styleElement, svgElement.firstChild);
     }
 
-    styleElement.textContent = `
-      svg.${iconClassName} .svg-stroke { stroke: ${strokeColor.value}; }
-      svg.${iconClassName} .svg-fill { fill: ${fillColor.value}; }
-      svg.${iconClassName}:hover .svg-stroke { stroke: ${hoverStrokeColor.value}; }
-      svg.${iconClassName}:hover .svg-fill { fill: ${hoverFillColor.value}; }
-    `;
+    // 색상에 따른 스타일 동적으로 생성
+    const styleContent = Array.from(colorClassMap.entries())
+      .map(
+        ([_, className], index) => `
+        svg.${iconClassName} .${className} { 
+          stroke: ${
+            index < props.color?.length!
+              ? getColor(index, "currentColor")
+              : "none"
+          }; 
+          fill: ${
+            index < props.color?.length!
+              ? getColor(index, "currentColor")
+              : "none"
+          }; 
+        }
+        svg.${iconClassName}:hover .${className} { 
+          stroke: ${
+            index < props.hoverColor?.length!
+              ? getHoverColor(index, "currentColor")
+              : getColor(index, "currentColor")
+          }; 
+          fill: ${
+            index < props.hoverColor?.length!
+              ? getHoverColor(index, "currentColor")
+              : getColor(index, "currentColor")
+          }; 
+        }
+      `
+      )
+      .join("\n");
+
+    styleElement.textContent = styleContent;
+  }
+};
+
+const addSvgPathClass = (paths: NodeListOf<Element>) => {
+  paths.forEach((path) => {
+    if (path.hasAttribute("stroke") && path.getAttribute("stroke") !== "none") {
+      const strokeColor = path.getAttribute("stroke");
+      applyColorClass(path, strokeColor);
+    }
+
+    if (path.hasAttribute("fill") && path.getAttribute("fill") !== "none") {
+      const fillColor = path.getAttribute("fill");
+      applyColorClass(path, fillColor);
+    }
+  });
+};
+
+const applyColorClass = (path: Element, color: string | null) => {
+  if (color) {
+    if (!colorClassMap.has(color)) {
+      const className = `svg-color-${colorClassCounter++}`;
+      colorClassMap.set(color, className);
+    }
+    const className = colorClassMap.get(color);
+    path.classList.add(className!);
   }
 };
 

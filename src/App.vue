@@ -12,7 +12,7 @@ const components = [] as {
   component: ReturnType<typeof defineAsyncComponent>;
 }[];
 
-const modules = import.meta.glob("./components/TestPage*.vue");
+const modules = import.meta.glob("./components/TestPage1.vue");
 
 for (const path in modules) {
   const nameMatch = path.match(/\/TestPage(\d+)\.vue$/);

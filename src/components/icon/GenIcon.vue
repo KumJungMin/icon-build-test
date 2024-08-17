@@ -4,8 +4,9 @@
 
 <script setup lang="ts">
 import type { SvgCacheStore } from "../../composables/useSvgCacheStore";
-import { ref, onMounted, onUnmounted, inject, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, inject, computed, watch } from "vue";
 
+// 컴포넌트의 props 정의
 const props = defineProps<{
   name?: string;
   src: string;
@@ -16,6 +17,7 @@ const props = defineProps<{
   strokeWidth?: string;
 }>();
 
+// SVG 캐시 스토어를 인젝션
 const svgCacheStore = inject<SvgCacheStore>("svgCacheStore");
 
 const iconClasses = computed(() => ({
@@ -35,6 +37,7 @@ if (!svgCacheStore) {
 
 const svgContainer = ref<HTMLElement | null>(null);
 let svgElement: SVGElement | null = null;
+let observer: IntersectionObserver | null = null;
 
 const loadAndInsertSvg = async () => {
   const svgContent = await svgCacheStore.loadSvg(props.src);
@@ -89,6 +92,7 @@ const addSvgPathClass = (paths: NodeListOf<Element> | Element[]) => {
     }
   });
 };
+
 const setSvgStyle = (svgElement: SVGElement, iconClassName: string) => {
   let styleElement = svgElement.querySelector("style");
   if (!styleElement) {
@@ -103,12 +107,23 @@ const setSvgStyle = (svgElement: SVGElement, iconClassName: string) => {
     `;
 };
 
+// IntersectionObserver를 사용하여 Lazy Loading 구현
 onMounted(() => {
-  loadAndInsertSvg();
+  observer = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting) {
+      loadAndInsertSvg();
+      observer?.disconnect(); // 한 번 로드한 후에는 더 이상 관찰하지 않음
+    }
+  });
+
+  if (svgContainer.value) {
+    observer.observe(svgContainer.value);
+  }
 });
 
 onUnmounted(() => {
   svgCacheStore.removeSvg(props.src);
+  observer?.disconnect();
 });
 
 watch(
