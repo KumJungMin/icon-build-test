@@ -11,8 +11,7 @@ export interface SvgCacheStore {
 export function useSvgCacheStore(): SvgCacheStore {
   const svgCache = ref<Record<string, string>>({});
   const iconUsageCount = ref<Record<string, number>>({});
-  const cacheTimeouts = ref<Record<string, NodeJS.Timeout>>({});
-
+  const cacheTimeouts = ref<Record<string, ReturnType<typeof setTimeout>>>({});
   const CACHE_TIMEOUT = 300000; // 5분 (300,000ms)
 
   const loadSvg = async (src: string): Promise<string> => {
